@@ -1,0 +1,10 @@
+[package]
+name = "slimevr-cli"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+clap = { version = "4.5.20", features = ["derive"] }
+solarxr_protocol = { git = "https://github.com/SlimeVR/SolarXR-Protocol" }
+flatbuffers = "22.10.26"
+tungstenite = "0.24.0"
