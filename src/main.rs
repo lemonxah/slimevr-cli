@@ -1,6 +1,8 @@
+use std::env;
 use std::time::Duration;
 
-use log::{error, info};
+use env_logger::Builder;
+use log::{error, info, trace};
 use solarxr_protocol::rpc::{
     ResetRequest, ResetRequestArgs, ResetType, RpcMessage, RpcMessageHeader, RpcMessageHeaderArgs,
 };
@@ -24,7 +26,7 @@ struct Cli {
 }
 
 fn main() {
-    env_logger::init();
+    Builder::new().filter(None, log::LevelFilter::Info).init();
 
     let cli = Cli::parse();
     if let Err(err) = match cli.command {
@@ -68,7 +70,7 @@ fn send_reset(rtype: ResetType) -> Result<(), tungstenite::Error> {
         if let Ok(msg) = socket.read() {
             if let Ok(message) = msg.to_text() {
                 if message.is_empty() {
-                    info!("empty message");
+                    trace!("empty message");
                     break;
                 }
                 info!("Received: {}", message);
