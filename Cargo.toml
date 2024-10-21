@@ -8,3 +8,5 @@ clap = { version = "4.5.20", features = ["derive"] }
 solarxr_protocol = { git = "https://github.com/SlimeVR/SolarXR-Protocol" }
 flatbuffers = "22.10.26"
 tungstenite = "0.24.0"
+env_logger = "0.11.5"
+log = "0.4.22"
