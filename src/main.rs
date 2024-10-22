@@ -58,32 +58,35 @@ fn send_reset(rtype: ResetType) -> Result<(), tungstenite::Error> {
     fbb.finish(message, None);
     let data = fbb.finished_data().to_vec();
 
-    let (mut socket, _response) = connect("ws://localhost:21110").unwrap();
-    if let Err(err) = socket.send(Message::Binary(data)) {
-        error!("Error sending message: {:?}", err);
-    }
-
-    loop {
-        if let Ok(msg) = socket.read() {
-            if let Ok(message) = msg.to_text() {
-                if message.is_empty() {
-                    trace!("empty message");
+    if let Ok((mut socket, _response)) = connect("ws://localhost:21110") {
+        if let Err(err) = socket.send(Message::Binary(data)) {
+            error!("Error sending message: {:?}", err);
+        }
+        loop {
+            if let Ok(msg) = socket.read() {
+                if let Ok(message) = msg.to_text() {
+                    if message.is_empty() {
+                        trace!("empty message");
+                        break;
+                    }
+                    info!("Received: {}", message);
+                } else {
+                    info!("done");
                     break;
                 }
-                info!("Received: {}", message);
             } else {
-                info!("done");
+                info!("unable to read socket");
                 break;
             }
-        } else {
-            info!("unable to read socket");
-            break;
         }
-    }
 
-    let close_frame = CloseFrame {
-        code: CloseCode::Normal,
-        reason: "done resetting".into(),
-    };
-    socket.close(Some(close_frame))
+        let close_frame = CloseFrame {
+            code: CloseCode::Normal,
+            reason: "done resetting".into(),
+        };
+        socket.close(Some(close_frame))
+    } else {
+        error!("Make sure that the SlimeVR server is running before running this command.");
+        Ok(())
+    }
 }
