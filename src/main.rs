@@ -1,6 +1,3 @@
-use std::env;
-use std::time::Duration;
-
 use env_logger::Builder;
 use log::{error, info, trace};
 use solarxr_protocol::rpc::{
