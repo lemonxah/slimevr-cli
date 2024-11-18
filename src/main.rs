@@ -1,3 +1,7 @@
+use std::fs::File;
+use std::thread;
+use std::time::Duration;
+
 use env_logger::Builder;
 use log::{error, info, trace};
 use solarxr_protocol::rpc::{
@@ -22,9 +26,16 @@ struct Cli {
     command: Commands,
 }
 
+fn play_mp3(file_path: &str) {
+    let file = File::open(file_path).unwrap();
+    let (_stream, handle) = rodio::OutputStream::try_default().unwrap();
+    let sink = rodio::Sink::try_new(&handle).unwrap();
+    sink.append(rodio::Decoder::new(std::io::BufReader::new(file)).unwrap());
+    sink.sleep_until_end();
+}
+
 fn main() {
     Builder::new().filter(None, log::LevelFilter::Info).init();
-
     let cli = Cli::parse();
     if let Err(err) = match cli.command {
         Commands::FullReset => send_reset(ResetType::Full),
@@ -35,6 +46,24 @@ fn main() {
 }
 
 fn send_reset(rtype: ResetType) -> Result<(), tungstenite::Error> {
+    let prefix = if cfg!(debug_assertions) {
+        ""
+    } else {
+        "/usr/share"
+    };
+    let file_path = match rtype {
+        ResetType::Full => "assets/full-reset.mp3",
+        ResetType::Yaw => "assets/yaw-reset.mp3",
+        _ => "",
+    };
+    let file_path = format!("{}/{}", prefix, file_path);
+    let handle = thread::spawn(move || {
+        play_mp3(&file_path);
+    });
+    if rtype == ResetType::Full {
+        thread::sleep(Duration::from_secs(2));
+    }
+    info!("sending reset: {:?}", rtype);
     let mut fbb = flatbuffers::FlatBufferBuilder::new();
     let args = RpcMessageHeaderArgs {
         tx_id: None,
@@ -69,7 +98,7 @@ fn send_reset(rtype: ResetType) -> Result<(), tungstenite::Error> {
                         trace!("empty message");
                         break;
                     }
-                    info!("Received: {}", message);
+                    //info!("Received: {}", message);
                 } else {
                     info!("done");
                     break;
@@ -84,6 +113,8 @@ fn send_reset(rtype: ResetType) -> Result<(), tungstenite::Error> {
             code: CloseCode::Normal,
             reason: "done resetting".into(),
         };
+        handle.join().unwrap();
+        info!("{:?} reset done", rtype);
         socket.close(Some(close_frame))
     } else {
         error!("Make sure that the SlimeVR server is running before running this command.");
