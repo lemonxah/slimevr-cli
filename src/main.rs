@@ -49,7 +49,7 @@ fn send_reset(rtype: ResetType) -> Result<(), tungstenite::Error> {
     let prefix = if cfg!(debug_assertions) {
         ""
     } else {
-        "/usr/share"
+        "/usr/share/slimevr-cli"
     };
     let file_path = match rtype {
         ResetType::Full => "assets/full-reset.mp3",
